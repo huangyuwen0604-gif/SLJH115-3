@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>115學年度 忠孝國中適性輔導安置 - 志願模擬系統</title>
+<title>115學年度 勝利國中適性輔導安置 - 志願模擬系統</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -105,6 +105,7 @@
   .btn-save { background-color: #9b59b6; }
   .btn-dl { background-color: #27ae60; }
   .btn-back { background-color: #95a5a6; }
+  .btn-clear { background-color: #e74c3c; }
 
   /* ------------------------------- */
   /* --- 報表區塊 (A4強制版面) --- */
@@ -155,28 +156,28 @@
 <div class="container">
   
   <div id="pageForm">
-    <h1><span class="badge-school">忠孝國中</span> 115學年度 適性輔導安置<br>志願選填模擬系統</h1>
+    <h1><span class="badge-school">勝利國中</span> 115學年度 適性輔導安置<br>志願選填模擬系統</h1>
     <div class="subtitle">包含新竹縣/市所有校系 • 依據113學年度開缺資料模擬</div>
     
     <div class="welcome-box">
       <span class="welcome-title">👋 各位家長與同學好，請留意以下選填規則：</span>
       <ul class="welcome-list">
-        <li>本系統為<strong>忠孝國中模擬練習用</strong>，實際名額以簡章為準。</li>
+        <li>本系統為<strong>勝利國中模擬練習用</strong>，實際名額以簡章為準。</li>
         <li>請依序選填<strong>至少 15 個</strong>志願。(若可選志願總數不足15個，請<strong>全部勾選</strong>)。</li>
         <li><strong>前 3 個志願</strong>原則上須為「<strong>同一職群</strong>」。<br>
             <span style="color:#e65100; font-size:0.9em;">(註：若該群僅1個志願，則2、3志願需同群；若該群僅2個，則前2志願需填滿)</span>
         </li>
         <li>若已選 3 個職群但總名額不足 10 個，可加選第 4 個職群。</li>
         <li><strong>注意：加選的第 4 職群志願，排序時不可移動至前 3 職群區域內。</strong></li>
-        <li>完成後，請點選「產生確認表」，並<strong>截圖或下載</strong>傳給<strong>學習中心老師</strong>。</li>
+        <li>本系統會<strong>自動儲存</strong>您的進度，若需幫另一位同學選填，請點選「清空重填」。</li>
       </ul>
     </div>
 
     <div class="section">
       <h2>1. 基本資料</h2>
       <div class="input-row">
-        <div class="input-group"><label>學生姓名：</label><input type="text" id="inpStudent"></div>
-        <div class="input-group"><label>家長姓名：</label><input type="text" id="inpParent"></div>
+        <div class="input-group"><label>學生姓名：</label><input type="text" id="inpStudent" oninput="saveToLocalStorage()"></div>
+        <div class="input-group"><label>家長姓名：</label><input type="text" id="inpParent" oninput="saveToLocalStorage()"></div>
       </div>
     </div>
 
@@ -210,6 +211,7 @@
 
     <div class="btn-zone">
       <button type="button" class="btn btn-main" onclick="window.appGenerateReport()">產生確認表</button>
+      <button type="button" class="btn btn-clear" onclick="window.appClearAll()">清空重填</button>
     </div>
   </div>
 
@@ -217,7 +219,7 @@
       <div class="scroll-hint">💡 請左右滑動檢查報表完整性</div>
       <div class="report-scroll-wrapper">
           <div id="pageReport">
-            <h2 style="text-align:center; border:none; margin-bottom:15px; font-size:1.5em;">115學年度 適性輔導安置<br>志願選填確認表 (忠孝國中模擬)</h2>
+            <h2 style="text-align:center; border:none; margin-bottom:15px; font-size:1.5em;">115學年度 適性輔導安置<br>志願選填確認表 (勝利國中模擬)</h2>
             
             <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:1.05em; border-bottom:2px solid #eee; padding-bottom:10px;">
               <div>學生：<strong id="outStudent"></strong></div>
@@ -256,7 +258,7 @@
 
 <script>
     // ==========================================
-    // 1. 資料庫 (忠孝國中版)
+    // 1. 資料庫 (勝利國中版)
     // ==========================================
     const DB = [
         {c:"學術群", cls:"bg-academic", list:[{s:"國立新竹高中",d:"普通科"},{s:"國立新竹女中",d:"普通科"},{s:"國立竹科實中",d:"普通科"},{s:"市立成德高中",d:"普通科"},{s:"市立建功高中",d:"普通科"},{s:"市立香山高中",d:"普通科"},{s:"私立光復高中",d:"普通科"},{s:"私立磐石高中",d:"普通科"},{s:"私立曙光女中",d:"普通科"},{s:"國立竹北高中",d:"普通科"},{s:"國立竹東高中",d:"普通科"},{s:"縣立六家高中",d:"普通科"},{s:"縣立湖口高中",d:"普通科"},{s:"國立關西高中",d:"綜合高中"},{s:"國立新竹高商",d:"綜合高中"},{s:"私立內思高工",d:"綜合高中"},{s:"私立忠信高中",d:"普通科"},{s:"私立忠信高中",d:"綜合高中"},{s:"私立東泰高中",d:"普通科"},{s:"私立義民高中",d:"普通科"}]},
@@ -276,13 +278,55 @@
 
     let state = { clusters: [], wishes: [], fourth: null, counts: {} };
 
+    // --- 初始化 ---
     (function init() {
         DB.forEach(g => { state.counts[g.c] = g.list.length; });
+        
+        // 從 LocalStorage 載入資料
+        loadFromLocalStorage();
+        
         renderClusters();
+        renderPool();
+        renderSortList();
         initSortable();
     })();
 
-    // 職群邏輯
+    // --- LocalStorage 核心邏輯 ---
+    function saveToLocalStorage() {
+        const dataToSave = {
+            student: document.getElementById('inpStudent').value,
+            parent: document.getElementById('inpParent').value,
+            clusters: state.clusters,
+            wishes: state.wishes,
+            fourth: state.fourth
+        };
+        localStorage.setItem('vsm_sim_data', JSON.stringify(dataToSave));
+    }
+
+    function loadFromLocalStorage() {
+        const savedData = localStorage.getItem('vsm_sim_data');
+        if (savedData) {
+            try {
+                const parsed = JSON.parse(savedData);
+                document.getElementById('inpStudent').value = parsed.student || "";
+                document.getElementById('inpParent').value = parsed.parent || "";
+                state.clusters = parsed.clusters || [];
+                state.wishes = parsed.wishes || [];
+                state.fourth = parsed.fourth || null;
+            } catch (e) {
+                console.error("載入快取失敗", e);
+            }
+        }
+    }
+
+    window.appClearAll = function() {
+        if (confirm("這將清空所有已選填的志願與姓名，確定嗎？")) {
+            localStorage.removeItem('vsm_sim_data');
+            location.reload();
+        }
+    };
+
+    // --- 職群邏輯 ---
     function renderClusters() {
         const div = document.getElementById('divClusters');
         div.innerHTML = '';
@@ -341,9 +385,10 @@
         renderClusters();
         renderPool();
         renderSortList();
+        saveToLocalStorage();
     }
 
-    // 志願池邏輯
+    // --- 志願池邏輯 ---
     function renderPool() {
         const pool = document.getElementById('divPool');
         pool.innerHTML = '';
@@ -391,6 +436,7 @@
                     }
                     renderPool();
                     renderSortList();
+                    saveToLocalStorage();
                 };
 
                 card.onclick = (e) => { if (e.target.tagName !== 'INPUT') toggle(); };
@@ -403,10 +449,8 @@
         updateStats(state.wishes.length, totalOpts);
     }
 
-    // 全選功能
     window.appSelectAll = function() {
         if (state.clusters.length === 0) return;
-        
         let hasNew = false;
         state.clusters.forEach(cName => {
             const grp = DB.find(g => g.c === cName);
@@ -422,13 +466,13 @@
         });
 
         if(hasNew) {
-            // 重新排序
             state.wishes.sort((a, b) => {
                 if (a.is4 === b.is4) return 0;
                 return a.is4 ? 1 : -1;
             });
             renderPool();
             renderSortList();
+            saveToLocalStorage();
         }
     };
 
@@ -438,7 +482,7 @@
         state.currentTotalAvailable = total;
     }
 
-    // 排序區
+    // --- 排序區 ---
     function renderSortList() {
         const list = document.getElementById('sortList');
         list.innerHTML = '';
@@ -446,7 +490,6 @@
             const li = document.createElement('li');
             li.className = `sort-li ${w.cls}`;
             li.setAttribute('data-uid', w.uid);
-            
             if (w.is4) {
                 li.classList.add('is-fourth-item');
                 li.style.border = '2px dashed #e67e22';
@@ -465,6 +508,7 @@
                 state.wishes = state.wishes.filter(x => x.uid !== w.uid);
                 renderPool();
                 renderSortList();
+                saveToLocalStorage();
             };
             list.appendChild(li);
         });
@@ -478,7 +522,6 @@
                 clearInterval(check);
                 Sortable.create(el, {
                     animation: 150,
-                    // 分區拖曳邏輯
                     onMove: function (evt) {
                         var draggedItem = evt.dragged;
                         var targetItem = evt.related;
@@ -497,6 +540,7 @@
                         });
                         state.wishes = newWishes;
                         renderSortList();
+                        saveToLocalStorage();
                     }
                 });
             }
@@ -554,7 +598,7 @@
         return true;
     }
 
-    // 產生報表
+    // --- 報表生成與輸出 ---
     window.appGenerateReport = function() {
         try {
             const s = document.getElementById('inpStudent').value.trim();
@@ -588,7 +632,6 @@
             tbody.innerHTML = '';
             state.wishes.forEach((w, i) => {
                 const tr = document.createElement('tr');
-                tr.className = w.cls; 
                 const colorMap = {
                     'bg-academic': '#e3f2fd', 'bg-machine': '#e0f7fa', 'bg-power': '#e8f5e9',
                     'bg-electro': '#fffde7', 'bg-business': '#f3e5f5', 'bg-design': '#fce4ec',
@@ -623,7 +666,7 @@
     window.appDownloadTxt = function() {
         try {
             const s = document.getElementById('outStudent').innerText;
-            let txt = `115學年度 適性輔導安置 - 志願選填確認表 (忠孝國中模擬)\n`;
+            let txt = `115學年度 適性輔導安置 - 志願選填確認表 (勝利國中模擬)\n`;
             txt += `========================================\n`;
             txt += `學生：${s}\n`;
             txt += `家長：${document.getElementById('outParent').innerText}\n`;
@@ -649,7 +692,7 @@
     window.appSaveImage = function() {
         var div = document.getElementById('pageReport');
         var originalWidth = div.style.width;
-        div.style.width = "850px"; // 強制 A4 寬度，避免手機換行
+        div.style.width = "850px"; 
 
         var btns = document.querySelector('.btn-zone.no-print');
         btns.style.display = 'none'; 
@@ -663,7 +706,6 @@
             }).then(function(canvas) {
                 btns.style.display = 'block'; 
                 var imgUrl = canvas.toDataURL("image/jpeg");
-
                 var modal = document.createElement('div');
                 modal.className = 'img-modal';
                 modal.innerHTML = `
@@ -672,17 +714,12 @@
                     <button class="modal-close" onclick="this.parentElement.remove()">關閉視窗</button>
                 `;
                 document.body.appendChild(modal);
-                
                 div.style.width = originalWidth;
-
             }).catch(function(err) {
                 btns.style.display = 'block';
                 div.style.width = originalWidth;
-                alert("截圖失敗，請手動截圖");
+                alert("截圖失敗");
             });
-        } else {
-            btns.style.display = 'block';
-            alert("截圖模組未載入");
         }
     };
 </script>
