@@ -483,7 +483,7 @@
         }
     };
 
-    // --- 職群邏輯 ---
+    // --- 職群邏輯 (已修正：滿15個則鎖定) ---
     function renderClusters() {
         const div = document.getElementById('divClusters');
         div.innerHTML = '';
@@ -501,12 +501,15 @@
 
         document.getElementById('txtClusterCount').innerText = state.clusters.length;
         const msg = document.getElementById('msgCluster');
+        
+        // 計算前三個職群的總名額 (排除第四個)
         let top3Count = 0;
         state.clusters.forEach(c => { if (c !== state.fourth) top3Count += state.counts[c]; });
 
-        if (state.clusters.length === 3 && top3Count < 10) {
+        // 判斷是否開啟提示
+        if (state.clusters.length === 3 && top3Count < 15) {
             msg.style.display = 'block';
-            msg.innerText = `⚠️ 選取 3 個職群總額僅 ${top3Count} 個 (少於10個)，可加選第 4 群！`;
+            msg.innerText = `⚠️ 選取 3 個職群總額僅 ${top3Count} 個 (少於 15 個)，請加選第 4 個職群以湊滿志願！`;
         } else if (state.clusters.length === 4) {
             msg.style.display = 'block';
             msg.innerText = `✅ 已加選第 4 職群：${state.fourth}`;
@@ -527,18 +530,24 @@
             state.clusters = state.clusters.filter(c => c !== cName);
             if (cName === state.fourth) state.fourth = null;
             state.wishes = state.wishes.filter(w => w.c !== cName);
+            
             if (state.clusters.length <= 3) state.fourth = null;
+
         } else {
             if (state.clusters.length < 3) {
                 state.clusters.push(cName);
             } else if (state.clusters.length === 3) {
+                // --- 關鍵修正：計算目前 3 個職群的總志願數 ---
                 let currentTotal = 0;
                 state.clusters.forEach(c => currentTotal += state.counts[c]);
-                if (currentTotal < 10) {
+                
+                // 如果少於 15 個 -> 允許加選
+                if (currentTotal < 15) {
                     state.clusters.push(cName);
-                    state.fourth = cName;
+                    state.fourth = cName; // 標記為第4職群
                 } else {
-                    alert("已選 3 個職群且名額充足，不可加選！");
+                    // 如果大於等於 15 個 -> 阻擋加選
+                    alert(`⛔ 無法加選！\n\n您目前選的 3 個職群，總名額已有 ${currentTotal} 個 (已達 15 個以上)。\n\n依規定，若前三職群志願數充足，不可加選第 4 職群。`);
                     return;
                 }
             } else {
@@ -770,6 +779,7 @@
             if (!s || !p) { alert("請輸入學生與家長姓名！"); return; }
             
             const totalAvail = state.currentTotalAvailable || 0;
+            // 檢查是否選滿 15 個 (除非總名額不足15)
             if (totalAvail >= 15 && state.wishes.length < 15) {
                 alert(`共有 ${totalAvail} 個志願可選，請至少選填 15 個！`); return;
             }
@@ -907,6 +917,7 @@
 
 </body>
 </html>
+
 
 
 
