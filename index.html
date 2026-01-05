@@ -259,7 +259,7 @@
 
 <script>
     // ==========================================
-    // 1. 資料庫 (115學年度 勝利國中適性輔導安置 - 圖片更新版)
+    // 1. 資料庫 (115學年度 勝利國中適性輔導安置 - 切結書邏輯版)
     // ==========================================
     const DB = [
         {
@@ -437,17 +437,14 @@
     // --- 初始化 ---
     (function init() {
         DB.forEach(g => { state.counts[g.c] = g.list.length; });
-        
-        // 從 LocalStorage 載入資料
         loadFromLocalStorage();
-        
         renderClusters();
         renderPool();
         renderSortList();
         initSortable();
     })();
 
-    // --- LocalStorage 核心邏輯 ---
+    // --- LocalStorage ---
     function saveToLocalStorage() {
         const dataToSave = {
             student: document.getElementById('inpStudent').value,
@@ -456,12 +453,11 @@
             wishes: state.wishes,
             fourth: state.fourth
         };
-        // 更新 Key 避免與舊資料混淆
-        localStorage.setItem('vsm_sim_data_115_image_update', JSON.stringify(dataToSave));
+        localStorage.setItem('vsm_sim_data_115_final', JSON.stringify(dataToSave));
     }
 
     function loadFromLocalStorage() {
-        const savedData = localStorage.getItem('vsm_sim_data_115_image_update');
+        const savedData = localStorage.getItem('vsm_sim_data_115_final');
         if (savedData) {
             try {
                 const parsed = JSON.parse(savedData);
@@ -478,12 +474,12 @@
 
     window.appClearAll = function() {
         if (confirm("這將清空所有已選填的志願與姓名，確定嗎？")) {
-            localStorage.removeItem('vsm_sim_data_115_image_update');
+            localStorage.removeItem('vsm_sim_data_115_final');
             location.reload();
         }
     };
 
-    // --- 職群邏輯 (已修正：滿15個則鎖定) ---
+    // --- 職群邏輯 (關鍵修改處) ---
     function renderClusters() {
         const div = document.getElementById('divClusters');
         div.innerHTML = '';
@@ -502,52 +498,61 @@
         document.getElementById('txtClusterCount').innerText = state.clusters.length;
         const msg = document.getElementById('msgCluster');
         
-        // 計算前三個職群的總名額 (排除第四個)
         let top3Count = 0;
         state.clusters.forEach(c => { if (c !== state.fourth) top3Count += state.counts[c]; });
 
-        // 判斷是否開啟提示
-        if (state.clusters.length === 3 && top3Count < 15) {
+        // --- 3種情境判斷 ---
+        msg.style.display = 'none';
+        if (state.clusters.length === 3) {
             msg.style.display = 'block';
-            msg.innerText = `⚠️ 選取 3 個職群總額僅 ${top3Count} 個 (少於 15 個)，請加選第 4 個職群以湊滿志願！`;
+            if (top3Count < 10) {
+                // 情境 1: 小於10 -> 開放
+                msg.innerHTML = `⚠️ 3 個職群總額僅 ${top3Count} 個 (少於10個)，<span style="color:#e65100;font-weight:bold;">可加選第 4 個職群</span>！`;
+            } else if (top3Count < 15) {
+                // 情境 2: 10~14 -> 不開放但警告
+                msg.innerHTML = `⚠️ 目前可選總額 ${top3Count} 個 (不足15個)。<br><span style="color:#c0392b;font-weight:bold;font-size:1.05em;">因選填群科學校較少，仍須按新竹縣規定填寫【切結書】</span>。`;
+            } else {
+                msg.style.display = 'none';
+            }
         } else if (state.clusters.length === 4) {
             msg.style.display = 'block';
             msg.innerText = `✅ 已加選第 4 職群：${state.fourth}`;
-        } else {
-            msg.style.display = 'none';
         }
     }
 
     function toggleCluster(cName) {
         if (state.clusters.includes(cName)) {
-            // [UX安全] 如果該職群已有志願，跳出警告
+            // 取消選取
             if (state.wishes.some(w => w.c === cName)) {
                 if (!confirm(`您在「${cName}」已經選了志願。\n取消此職群將會「刪除」這些志願排序，確定嗎？`)) {
                     return;
                 }
             }
-
             state.clusters = state.clusters.filter(c => c !== cName);
             if (cName === state.fourth) state.fourth = null;
             state.wishes = state.wishes.filter(w => w.c !== cName);
-            
             if (state.clusters.length <= 3) state.fourth = null;
 
         } else {
+            // 新增選取
             if (state.clusters.length < 3) {
                 state.clusters.push(cName);
             } else if (state.clusters.length === 3) {
-                // --- 關鍵修正：計算目前 3 個職群的總志願數 ---
+                // --- 計算目前 3 個職群的總志願數 ---
                 let currentTotal = 0;
                 state.clusters.forEach(c => currentTotal += state.counts[c]);
                 
-                // 如果少於 15 個 -> 允許加選
-                if (currentTotal < 15) {
+                if (currentTotal < 10) {
+                    // 情境 1: 少於10 -> 允許
                     state.clusters.push(cName);
-                    state.fourth = cName; // 標記為第4職群
+                    state.fourth = cName; 
+                } else if (currentTotal < 15) {
+                    // 情境 2: 10~14 -> 阻擋並警告
+                    alert(`⛔ 無法加選第 4 職群！\n\n您目前選的 3 個職群，總名額為 ${currentTotal} 個。\n\n雖未滿 15 個，但已達最低門檻 (10個)，故依規定不開放加選。\n\n⚠️ 【注意】：因志願數較少，須按新竹縣規定填寫【切結書】。`);
+                    return;
                 } else {
-                    // 如果大於等於 15 個 -> 阻擋加選
-                    alert(`⛔ 無法加選！\n\n您目前選的 3 個職群，總名額已有 ${currentTotal} 個 (已達 15 個以上)。\n\n依規定，若前三職群志願數充足，不可加選第 4 職群。`);
+                    // 情境 3: 15以上 -> 阻擋
+                    alert(`⛔ 無法加選！\n\n目前總名額已有 ${currentTotal} 個 (充足)。\n依規定不可加選第 4 職群。`);
                     return;
                 }
             } else {
@@ -561,7 +566,7 @@
         saveToLocalStorage();
     }
 
-    // --- 志願池邏輯 ---
+    // --- 志願池 ---
     function renderPool() {
         const pool = document.getElementById('divPool');
         pool.innerHTML = '';
@@ -601,7 +606,6 @@
                         state.wishes.splice(idx, 1);
                     } else {
                         state.wishes.push({uid, s:item.s, d:item.d, c:cName, cls:grp.cls, is4});
-                        // 新增時自動分區排序 (非4在前, 4在後)
                         state.wishes.sort((a, b) => {
                             if (a.is4 === b.is4) return 0;
                             return a.is4 ? 1 : -1;
@@ -613,7 +617,6 @@
                 };
 
                 card.onclick = (e) => { if (e.target.tagName !== 'INPUT') toggle(); };
-                
                 card.appendChild(chk);
                 card.appendChild(lbl);
                 pool.appendChild(card);
@@ -771,7 +774,7 @@
         return true;
     }
 
-    // --- 報表生成與輸出 ---
+    // --- 報表生成 ---
     window.appGenerateReport = function() {
         try {
             const s = document.getElementById('inpStudent').value.trim();
@@ -779,7 +782,7 @@
             if (!s || !p) { alert("請輸入學生與家長姓名！"); return; }
             
             const totalAvail = state.currentTotalAvailable || 0;
-            // 檢查是否選滿 15 個 (除非總名額不足15)
+            // 檢查是否選滿 15 個 (若總名額不足 15 則需選滿全部)
             if (totalAvail >= 15 && state.wishes.length < 15) {
                 alert(`共有 ${totalAvail} 個志願可選，請至少選填 15 個！`); return;
             }
@@ -917,6 +920,7 @@
 
 </body>
 </html>
+
 
 
 
